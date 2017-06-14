@@ -38,7 +38,7 @@ int main()
 				while(next != set.end() && (next->first - code) <= 1 && next->second != -1)
 				{
 					code = next->first;
-					next = set.upper_bound(code);
+					std::advance(next, 1);
 				}
 				code = code + 1;
 				set[code] = 1;

@@ -1,0 +1,43 @@
+2
+10 30
+answer 1 10
+modification 1 10
+modification 1 10
+modification 2 5
+modification 3 4
+modification 5 5
+answer 1 10
+answer 3 7
+answer 4 8
+answer 2 5
+answer 1 10
+modification 1 10
+modification 1 10
+modification 2 5
+modification 3 4
+modification 5 5
+answer 1 10
+answer 3 7
+answer 4 8
+answer 2 5
+answer 1 10
+modification 1 10
+modification 1 10
+modification 2 5
+modification 3 4
+modification 5 5
+answer 1 10
+answer 3 7
+answer 4 8
+answer 2 5
+10 10
+answer 1 10
+modification 1 10
+modification 1 10
+modification 2 5
+modification 3 4
+modification 5 5
+answer 1 10
+answer 3 7
+answer 4 8
+answer 2 5
