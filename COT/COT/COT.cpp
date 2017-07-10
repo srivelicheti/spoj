@@ -1,85 +1,117 @@
-// COT.cpp : Defines the entry point for the console application.
-//
-
 #include "stdafx.h"
-#include <vector>
-#include <iostream>
-#include <queue>
-#include <fstream>
-#include <stdio.h>
-#include	<cstdio>
 
+#include <cstdio>
+#include <map>
+#include <vector>
+#include <cstring>
+#include <iostream>
+#include <fstream>
 using namespace std;
 
+#define sz size()
+#define pb push_back
+#define rep(i,n) for(int i=0;i<n;i++)
+#define fd(i,a,b) for(int i=a; i>=b; i--)
 
-// no getchar_unlocked on Windows so just call getchar
-inline int getchar_unlocked() { return getchar(); }
+#define N 111111
+#define LN 19
+int v[N], pa[N][LN], RM[N], depth[N], maxi = 0;
+vector <int> adj[N];
+map <int, int> M;
 
-
-void scanint(int &x)
+struct node
 {
-	register int c = getchar_unlocked();
-	x = 0;
-	for (; (c<48 || c>57); c = getchar_unlocked())
-		;
-	for (; c>47 && c<58; c = getchar_unlocked())
-	{
-		x = (x << 1) + (x << 3) + c - 48;
-	}
-}
+	int count;
+	node *left, *right;
 
-bool SolveInternal(const vector<vector<int>>& g, const vector<int>& w, priority_queue<int>& pq, int u, int v, vector<bool>& visited, int k)
+	node(int count, node *left, node *right) :
+		count(count), left(left), right(right) {}
+
+	node* insert(int l, int r, int w);
+};
+
+node *null = new node(0, NULL, NULL); //see line 135
+
+node * node::insert(int l, int r, int w)
 {
-	if (u == v)
-		return true;
-	for (auto c : g[u])
+	if (l <= w && w < r)
 	{
-		if(!visited[c])
+		// With in the range, we need a new node
+		if (l + 1 == r)
 		{
-			visited[c] = true;
-			auto res = SolveInternal(g, w, pq, c, v, visited, k);
-			if (res) {
-				if (pq.size() < k)
-					pq.push(w[c]);
-				else if (pq.top() > w[c]) {
-					pq.pop();
-					pq.push(w[c]);
-				}
-				return true;
-			}
+			return new node(this->count + 1, null, null);
 		}
+
+		int m = (l + r) >> 1;
+
+		return new node(this->count + 1, this->left->insert(l, m, w), this->right->insert(m, r, w));
 	}
 
-	return false;
+	// Out of range, we can use previous tree node.
+	return this;
 }
 
-void Solve(const vector<vector<int>>& g, const vector<int>& w, int n)
+node *root[N];
+void dfs(int cur, int prev)
 {
-	priority_queue<int> pq;
-	vector<bool> visited(n+1);
+	pa[cur][0] = prev;
+	depth[cur] = (prev == -1 ? 0 : depth[prev] + 1);
 
-	int u, v, k;
-	cin >> u >> v >> k;
-	visited[u] = true;
-	auto res = SolveInternal(g, w, pq,u,v,visited,k);
-	if(res)
+	// Construct the segment tree for this node using parent segment tree	
+	// This is the formula we derived
+	root[cur] = (prev == -1 ? null : root[prev])->insert(0, maxi, M[v[cur]]);
+
+	rep(i, adj[cur].sz)
+		if (adj[cur][i] != prev)
+			dfs(adj[cur][i], cur);
+}
+
+int LCA(int u, int v)
+{
+	if (depth[u] < depth[v])
+		return LCA(v, u);
+
+	int diff = depth[u] - depth[v];
+
+	rep(i, LN)
+		if ((diff >> i) & 1)
+			u = pa[u][i];
+
+	if (u != v)
 	{
-		if (pq.size() < k)
-			pq.push(u);
-		else if (pq.top() > u) {
-			pq.pop();
-			pq.push(u);
-		}
+		fd(i, LN - 1, 0)
+			if (pa[u][i] != pa[v][i])
+			{
+				u = pa[u][i];
+				v = pa[v][i];
+			}
+		u = pa[u][0];
 	}
 
-	cout << pq.top() << endl;
+	return u;
+}
+
+int query(node *a, node *b, node *c, node *d, int l, int r, int k)
+{
+	if (l + 1 == r)
+	{
+		return l;
+	}
+
+	// This is the formula we derived
+	int count = a->left->count + b->left->count - c->left->count - d->left->count;
+	int m = (l + r) >> 1;
+
+	// We have enough on left, so go left
+	if (count >= k)
+		return query(a->left, b->left, c->left, d->left, l, m, k);
+
+	// We do not have enough on left, go right, remove left elements count
+	return query(a->right, b->right, c->right, d->right, m, r, k - count);
 }
 
 int main()
 {
-	ios::sync_with_stdio(false);
-	cin.tie(NULL);
-
 #if _DEBUG
 	std::ifstream ins("input.txt");
 	std::streambuf *cinbuf = std::cin.rdbuf(); //save old buf
@@ -87,32 +119,59 @@ int main()
 #endif
 
 	int n, m;
-	scanint(n);
-	scanint(m);
-	//cin >> n >> m;
+	cin >> n >> m;
+	//scanf_s("%d%d", &n, &m);
 
-	vector<int> w(n+1);
-	vector<vector<int>> g(n + 1);
-	int temp = n,temp2 = n-1;
-	int i = 1;
-	while(temp--)
+	rep(i, n)
 	{
-		cin >> w[i];
-		i++;
-	}
-	while(temp2--)
-	{
-		int s, e;
-		cin >> s >> e;
-		g[s].push_back(e);
-		g[e].push_back(s);
-	}
-	while(m--)
-	{
-		Solve(g, w,n);
+		cin >> v[i];
+		//scanf_s("%d", &v[i]);
+		M[v[i]];
 	}
 
+	maxi = 0;
+	for (map <int, int > ::iterator it = M.begin(); it != M.end(); it++)
+	{
+		M[it->first] = maxi;
+		RM[maxi] = it->first;
+		maxi++;
+	}
 
-    return 0;
+	// We compressed the given weights into the range [0..n)
+
+	rep(i, n - 1)
+	{
+		int u, v;
+		cin >> u >> v;
+		//scanf_s("%d%d", &u, &v);
+		u--; v--;
+		adj[u].pb(v);
+		adj[v].pb(u);
+	}
+
+	// Root the tree at some node.
+	memset(pa, -1, sizeof pa);
+	null->left = null->right = null;
+	dfs(0, -1);
+
+	// Build jump table for LCA in O( log N )
+	rep(i, LN - 1)
+		rep(j, n)
+		if (pa[j][i] != -1)
+			pa[j][i + 1] = pa[pa[j][i]][i];
+
+	while (m--)
+	{
+		int u, v, k;
+		cin >> u >> v >> k;
+		//scanf_s("%d%d%d", &u, &v, &k);
+		u--; v--;
+
+		int lca = LCA(u, v);
+		// Four nodes we spoke about are u, v, lca, parent(lca)
+		int ans = query(root[u], root[v], root[lca], (pa[lca][0] == -1 ? null : root[pa[lca][0]]), 0, maxi, k);
+
+		// Reverse Map the values, that is, uncompress
+		printf("%d\n", RM[ans]);
+	}
 }
-
